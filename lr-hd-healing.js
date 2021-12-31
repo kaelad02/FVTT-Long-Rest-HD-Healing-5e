@@ -131,7 +131,7 @@ Hooks.on("init", () => {
 function patch_newLongRest() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype.longRest",
+        "CONFIG.Actor.documentClass.prototype.longRest",
         async function patchedLongRest(...args) {
             let { chat=true, dialog=true, newDay=true } = args[0] ?? {};
 
@@ -169,7 +169,7 @@ function patch_newLongRest() {
 function patch_getRestHitPointRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype._getRestHitPointRecovery",
+        "CONFIG.Actor.documentClass.prototype._getRestHitPointRecovery",
         function patched_getRestHitPointRecovery(wrapped, ...args) {
             const currentHP = this.data.data.attributes.hp.value;
             const result = wrapped(...args);
@@ -186,7 +186,7 @@ function patch_getRestHitPointRecovery() {
 function patch_getRestHitDiceRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype._getRestHitDiceRecovery",
+        "CONFIG.Actor.documentClass.prototype._getRestHitDiceRecovery",
         function patched_getRestHitDiceRecovery(wrapped, ...args) {
             const { maxHitDice=undefined } = args[0] ?? {};
 
@@ -209,7 +209,7 @@ function patch_getRestHitDiceRecovery() {
 function patch_getRestResourceRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype._getRestResourceRecovery",
+        "CONFIG.Actor.documentClass.prototype._getRestResourceRecovery",
         function patched_getRestResourceRecovery(...args) {
             const { recoverShortRestResources=true, recoverLongRestResources=true } = args[0] ?? {};
 
@@ -238,7 +238,7 @@ function patch_getRestResourceRecovery() {
 function patch_getRestSpellRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype._getRestSpellRecovery",
+        "CONFIG.Actor.documentClass.prototype._getRestSpellRecovery",
         function patched_getRestSpellRecovery(wrapped, ...args) {
             const { recoverPact=true, recoverSpells=true } = args[0] ?? {};
 
@@ -267,7 +267,7 @@ function patch_getRestSpellRecovery() {
 function patch_getRestItemUsesRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype._getRestItemUsesRecovery",
+        "CONFIG.Actor.documentClass.prototype._getRestItemUsesRecovery",
         function patched_getRestItemUsesRecovery(wrapped, ...args) {
             const { recoverShortRestUses=true, recoverLongRestUses=true, recoverDailyUses=true } = args[0] ?? {};
 

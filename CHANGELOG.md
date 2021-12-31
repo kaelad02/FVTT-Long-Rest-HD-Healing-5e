@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## [3.2.0] 2021-12-31
+
+### CHANGED
+
+- Bump core compatible version to 0.9.
 ## [3.1.0] 2021-06-19
 
 ### ADDED

@@ -1,10 +1,12 @@
 import HDLongRestDialog from "./new-long-rest.js";
 import { libWrapper } from "./lib/libWrapper/shim.js";
 
+const CALC_HD_RECOVERY = "CALC_HD_RECOVERY";
+
 Hooks.on("init", () => {
     game.settings.register("long-rest-hd-healing", "recovery-mult-hitpoints", {
         name: "Hit Points Recovery Fraction",
-        hint: "The fraction missing hit points to recover on a long rest.",
+        hint: "The fraction of missing hit points to recover on a long rest before rolling hit dice.",
         scope: "world",
         config: true,
         type: String,
@@ -30,6 +32,15 @@ Hooks.on("init", () => {
             full: "Full",
         },
         default: "half",
+    });
+
+    game.settings.register("long-rest-hd-healing", "recover-hd-before-rest", {
+        name: "Recover Hit Dice Before Rolling",
+        hint: "Whether to recover hit dice before rolling them on a long rest.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
     });
 
     game.settings.register("long-rest-hd-healing", "recovery-rounding", {
@@ -138,7 +149,7 @@ function patch_newLongRest() {
             const hd0 = this.data.data.attributes.hd;
             const hp0 = this.data.data.attributes.hp.value;
 
-            // Before spending hit dice, recover a fraction of missing hit points (if applicable)
+            // Before spending hit dice, recover a fraction of missing hit points (if applicable)...
             const hitPointsRecoveryMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult-hitpoints");
             const hitPointsRecoveryMultiplier = determineLongRestMultiplier(hitPointsRecoveryMultSetting);
 
@@ -147,6 +158,17 @@ function patch_newLongRest() {
                 const recoveredHP = Math.floor((maxHP - hp0) * hitPointsRecoveryMultiplier);
 
                 await this.update({ "data.attributes.hp.value": hp0 + recoveredHP });
+            }
+
+            // ... and recover hit dice (if applicable)
+            const recoverHDBeforeRoll = game.settings.get("long-rest-hd-healing", "recover-hd-before-rest");
+            if (recoverHDBeforeRoll) {
+                // This comes from the code for Actor5e._rest()
+                let hitDiceUpdates = [];
+                let hitDiceRecovered;
+                // We call this with CALC_HD_RECOVERY to let the patched method know we're calling it.
+                ({updates: hitDiceUpdates, hitDiceRecovered} = this._getRestHitDiceRecovery(CALC_HD_RECOVERY));
+                await this.updateEmbeddedDocuments("Item", hitDiceUpdates);
             }
 
             // Maybe present a confirmation dialog
@@ -188,12 +210,22 @@ function patch_getRestHitDiceRecovery() {
         "long-rest-hd-healing",
         "CONFIG.Actor.documentClass.prototype._getRestHitDiceRecovery",
         function patched_getRestHitDiceRecovery(wrapped, ...args) {
-            const { maxHitDice=undefined } = args[0] ?? {};
+            let maxHitDice = args[0];
+            const recoverHDBeforeRoll = game.settings.get("long-rest-hd-healing", "recover-hd-before-rest");
+
+            const emptyReturn = { updates: [], hitDiceRecovered: 0 };
+            // If recoverHDBeforeRoll is set, we want to make sure _rest doesn't recover hit dice.
+            // We only return a non-zero hitDiceToRecover when this module calls the method, with maxHitDice = CALC_HD_RECOVERY.
+            if (recoverHDBeforeRoll) {
+                if (maxHitDice !== CALC_HD_RECOVERY) return emptyReturn;
+                maxHitDice = undefined;
+            }
+            
 
             const recoveryHDMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult");
             const recoveryHDMultiplier = determineLongRestMultiplier(recoveryHDMultSetting);
 
-            if (recoveryHDMultiplier === 0) return { updates: [], hitDiceRecovered: 0 };
+            if (recoveryHDMultiplier === 0) return emptyReturn;
 
             const recoveryHDRoundSetting = game.settings.get("long-rest-hd-healing", "recovery-rounding");
             const recoveryHDRoundingFn = recoveryHDRoundSetting === "down" ? Math.floor : Math.ceil;

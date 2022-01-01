@@ -21,7 +21,7 @@ Hooks.on("init", () => {
 
     game.settings.register("long-rest-hd-healing", "recovery-mult", {
         name: "Hit Dice Recovery Fraction",
-        hint: "The fraction of hit dice to recover on a long rest. If this is set to \"Full\", hit dice will be autorolled.",
+        hint: "The fraction of hit dice to recover on a long rest. If this is set to \"Full\", hit dice will be auto-rolled.",
         scope: "world",
         config: true,
         type: String,

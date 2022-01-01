@@ -11,8 +11,11 @@ export default class HDLongRestDialog extends ShortRestDialog {
     getData() {
         const data = super.getData();
         const variant = game.settings.get("dnd5e", "restVariant");
+        const recoveryHDMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult");
         data.promptNewDay = variant !== "gritty";     // It's always a new day when resting 1 week
         data.newDay = variant === "normal";           // It's probably a new day when resting normally (8 hours)
+        // We'll autoroll if all hit dice are to be recovered.
+        if (recoveryHDMultSetting === "full") data.canRoll = false;
         return data;
     }
 

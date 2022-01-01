@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [3.2.0] 2021-12-31
+
+### ADDED
+
+- Added option to recover hit dice before rolling.
+
+### CHANGED
+
+- Maintainer is now @a-ws-m.
+- Bump core compatible version to 0.9.
+- Auto-roll hit dice when recovery fraction is set to "Full".
+
 ## [3.1.0] 2021-06-19
 
 ### ADDED

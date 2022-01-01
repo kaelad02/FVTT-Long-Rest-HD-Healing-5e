@@ -1,10 +1,12 @@
 import HDLongRestDialog from "./new-long-rest.js";
 import { libWrapper } from "./lib/libWrapper/shim.js";
 
+const CALC_HD_RECOVERY = "CALC_HD_RECOVERY";
+
 Hooks.on("init", () => {
     game.settings.register("long-rest-hd-healing", "recovery-mult-hitpoints", {
         name: "Hit Points Recovery Fraction",
-        hint: "The fraction missing hit points to recover on a long rest.",
+        hint: "The fraction of missing hit points to recover on a long rest before rolling hit dice.",
         scope: "world",
         config: true,
         type: String,
@@ -19,7 +21,7 @@ Hooks.on("init", () => {
 
     game.settings.register("long-rest-hd-healing", "recovery-mult", {
         name: "Hit Dice Recovery Fraction",
-        hint: "The fraction of hit dice to recover on a long rest.",
+        hint: "The fraction of hit dice to recover on a long rest. If this is set to \"Full\", hit dice will be auto-rolled.",
         scope: "world",
         config: true,
         type: String,
@@ -30,6 +32,15 @@ Hooks.on("init", () => {
             full: "Full",
         },
         default: "half",
+    });
+
+    game.settings.register("long-rest-hd-healing", "recover-hd-before-rest", {
+        name: "Recover Hit Dice Before Rolling",
+        hint: "Whether to recover hit dice before rolling them on a long rest.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
     });
 
     game.settings.register("long-rest-hd-healing", "recovery-rounding", {
@@ -131,14 +142,14 @@ Hooks.on("init", () => {
 function patch_newLongRest() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype.longRest",
+        "CONFIG.Actor.documentClass.prototype.longRest",
         async function patchedLongRest(...args) {
             let { chat=true, dialog=true, newDay=true } = args[0] ?? {};
 
             const hd0 = this.data.data.attributes.hd;
             const hp0 = this.data.data.attributes.hp.value;
 
-            // Before spending hit dice, recover a fraction of missing hit points (if applicable)
+            // Before spending hit dice, recover a fraction of missing hit points (if applicable)...
             const hitPointsRecoveryMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult-hitpoints");
             const hitPointsRecoveryMultiplier = determineLongRestMultiplier(hitPointsRecoveryMultSetting);
 
@@ -149,6 +160,16 @@ function patch_newLongRest() {
                 await this.update({ "data.attributes.hp.value": hp0 + recoveredHP });
             }
 
+            // ... and recover hit dice (if applicable)
+            if (recoverHDBeforeRoll()) {
+                // This comes from the code for Actor5e._rest()
+                let hitDiceUpdates = [];
+                let hitDiceRecovered;
+                // We call this with CALC_HD_RECOVERY to let the patched method know we're calling it.
+                ({updates: hitDiceUpdates, hitDiceRecovered} = this._getRestHitDiceRecovery(CALC_HD_RECOVERY));
+                await this.updateEmbeddedDocuments("Item", hitDiceUpdates);
+            }
+
             // Maybe present a confirmation dialog
             if (dialog) {
                 try {
@@ -156,6 +177,12 @@ function patch_newLongRest() {
                 } catch (err) {
                     return;
                 }
+            }
+            
+            const recoveryHDMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult");
+            if (recoveryHDMultSetting === "full") {
+                // We'll autoroll all the hit dice, or till we get to max HP
+                this.autoSpendHitDice({threshold: 0});
             }
 
             const dhd = this.data.data.attributes.hd - hd0;
@@ -169,7 +196,7 @@ function patch_newLongRest() {
 function patch_getRestHitPointRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype._getRestHitPointRecovery",
+        "CONFIG.Actor.documentClass.prototype._getRestHitPointRecovery",
         function patched_getRestHitPointRecovery(wrapped, ...args) {
             const currentHP = this.data.data.attributes.hp.value;
             const result = wrapped(...args);
@@ -186,14 +213,22 @@ function patch_getRestHitPointRecovery() {
 function patch_getRestHitDiceRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype._getRestHitDiceRecovery",
+        "CONFIG.Actor.documentClass.prototype._getRestHitDiceRecovery",
         function patched_getRestHitDiceRecovery(wrapped, ...args) {
-            const { maxHitDice=undefined } = args[0] ?? {};
+            let maxHitDice = args[0];
+            const emptyReturn = { updates: [], hitDiceRecovered: 0 };
+            // If recoverHDBeforeRoll(), we want to make sure _rest doesn't recover hit dice.
+            // We only return a non-zero hitDiceToRecover when this module calls the method, with maxHitDice = CALC_HD_RECOVERY.
+            if (recoverHDBeforeRoll()) {
+                if (maxHitDice !== CALC_HD_RECOVERY) return emptyReturn;
+                maxHitDice = undefined;
+            }
+            
 
             const recoveryHDMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult");
             const recoveryHDMultiplier = determineLongRestMultiplier(recoveryHDMultSetting);
 
-            if (recoveryHDMultiplier === 0) return { updates: [], hitDiceRecovered: 0 };
+            if (recoveryHDMultiplier === 0) return emptyReturn;
 
             const recoveryHDRoundSetting = game.settings.get("long-rest-hd-healing", "recovery-rounding");
             const recoveryHDRoundingFn = recoveryHDRoundSetting === "down" ? Math.floor : Math.ceil;
@@ -209,7 +244,7 @@ function patch_getRestHitDiceRecovery() {
 function patch_getRestResourceRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype._getRestResourceRecovery",
+        "CONFIG.Actor.documentClass.prototype._getRestResourceRecovery",
         function patched_getRestResourceRecovery(...args) {
             const { recoverShortRestResources=true, recoverLongRestResources=true } = args[0] ?? {};
 
@@ -238,7 +273,7 @@ function patch_getRestResourceRecovery() {
 function patch_getRestSpellRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype._getRestSpellRecovery",
+        "CONFIG.Actor.documentClass.prototype._getRestSpellRecovery",
         function patched_getRestSpellRecovery(wrapped, ...args) {
             const { recoverPact=true, recoverSpells=true } = args[0] ?? {};
 
@@ -267,7 +302,7 @@ function patch_getRestSpellRecovery() {
 function patch_getRestItemUsesRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
-        "CONFIG.Actor.entityClass.prototype._getRestItemUsesRecovery",
+        "CONFIG.Actor.documentClass.prototype._getRestItemUsesRecovery",
         function patched_getRestItemUsesRecovery(wrapped, ...args) {
             const { recoverShortRestUses=true, recoverLongRestUses=true, recoverDailyUses=true } = args[0] ?? {};
 
@@ -343,4 +378,10 @@ function determineLongRestMultiplier(multSetting) {
     }
 
     return recoveryMultiplier;
+}
+
+// Determine whether to recover hit dice before rolling
+function recoverHDBeforeRoll(){
+    const recoveryHDMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult");
+    return game.settings.get("long-rest-hd-healing", "recover-hd-before-rest") || recoveryHDMultSetting === "full";
 }

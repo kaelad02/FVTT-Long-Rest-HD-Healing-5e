@@ -11,8 +11,11 @@ export default class HDLongRestDialog extends ShortRestDialog {
     getData() {
         const data = super.getData();
         const variant = game.settings.get("dnd5e", "restVariant");
+        const recoveryHDMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult");
         data.promptNewDay = variant !== "gritty";     // It's always a new day when resting 1 week
         data.newDay = variant === "normal";           // It's probably a new day when resting normally (8 hours)
+        // We'll autoroll if all hit dice are to be recovered.
+        if (recoveryHDMultSetting === "full") data.canRoll = false;
         return data;
     }
 
@@ -20,27 +23,26 @@ export default class HDLongRestDialog extends ShortRestDialog {
     static async hdLongRestDialog({ actor } = {}) {
         return new Promise((resolve, reject) => {
             const dlg = new this(actor, {
-                title: "Long Rest",
+                title: game.i18n.localize("DND5E.LongRest"),
                 buttons: {
                     rest: {
                         icon: "<i class=\"fas fa-bed\"></i>",
                         label: "Rest",
                         callback: html => {
-                            let newDay = false;
-                            if (game.settings.get("dnd5e", "restVariant") === "normal") {
+                            let newDay = true;
+                            if (game.settings.get("dnd5e", "restVariant") !== "gritty") {
                                 newDay = html.find("input[name=\"newDay\"]")[0].checked;
-                            } else if (game.settings.get("dnd5e", "restVariant") === "gritty") {
-                                newDay = true;
                             }
                             resolve(newDay);
                         },
                     },
                     cancel: {
                         icon: "<i class=\"fas fa-times\"></i>",
-                        label: "Cancel",
+                        label: game.i18n.localize("Cancel"),
                         callback: reject,
                     },
                 },
+                default: "rest",
                 close: reject,
             });
             dlg.render(true);

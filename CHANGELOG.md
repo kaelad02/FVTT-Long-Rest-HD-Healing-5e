@@ -8,6 +8,7 @@
 
 ### CHANGED
 
+- Maintainer is now @a-ws-m.
 - Bump core compatible version to 0.9.
 - Auto-roll hit dice when recovery fraction is set to "Full".
 

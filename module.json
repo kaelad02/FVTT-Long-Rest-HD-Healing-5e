@@ -8,7 +8,8 @@
   "esmodules": [
     "lr-hd-healing.js"
   ],
-  "minimumCoreVersion": "0.9",
+  "minimumCoreVersion": "9",
+  "compatibleCoreVersion": "9",
   "url": "https://github.com/a-ws-m/FVTT-Long-Rest-HD-Healing-5e",
   "manifest": "https://raw.githubusercontent.com/a-ws-m/FVTT-Long-Rest-HD-Healing-5e/master/module.json",
   "download": "https://github.com/a-ws-m/FVTT-Long-Rest-HD-Healing-5e/archive/3.2.0.zip",

@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [3.2.1] 2022-01-04
+
+### FIXED
+
+- Corrected Foundry versioning (0.9 -> 9).
+
+### ADDED
+
+- Added all contributors to `authors`.
+
 ## [3.2.0] 2021-12-31
 
 ### ADDED
@@ -9,7 +19,7 @@
 ### CHANGED
 
 - Maintainer is now @a-ws-m.
-- Bump core compatible version to v9.
+- Bump core compatible version to 0.9.
 - Auto-roll hit dice when recovery fraction is set to "Full".
 
 ## [3.1.0] 2021-06-19

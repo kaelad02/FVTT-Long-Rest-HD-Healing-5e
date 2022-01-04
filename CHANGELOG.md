@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [3.2.1] 2022-01-04
+
+### FIXED
+
+- Corrected Foundry versioning (0.9 -> 9).
+
+### ADDED
+
+- Added all contributors to `authors`.
+
 ## [3.2.0] 2021-12-31
 
 ### ADDED

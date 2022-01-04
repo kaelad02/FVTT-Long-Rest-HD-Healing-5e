@@ -4,7 +4,7 @@
   "description": "Adds the \"Slow Natural Healing\" rules to the dnd5e system. Rather than healing to full hit points, actors now have the option to spend hit dice on a long rest.",
   "system": "dnd5e",
   "version": "3.2.0",
-  "authors": ["Cole Schultz", "Alex Moriarty"],
+  "authors": ["Cole Schultz", "Alex Moriarty", "Maxime Chicault", "@DarKDinDoN"],
   "esmodules": [
     "lr-hd-healing.js"
   ],

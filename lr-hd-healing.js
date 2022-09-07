@@ -143,8 +143,13 @@ function patch_newLongRest() {
     libWrapper.register(
         "long-rest-hd-healing",
         "CONFIG.Actor.documentClass.prototype.longRest",
-        async function patchedLongRest(...args) {
-            let { chat=true, dialog=true, newDay=true } = args[0] ?? {};
+        async function patchedLongRest(config = {}) {
+            config = foundry.utils.mergeObject({
+                dialog: true, chat: true, newDay: true
+              }, config);
+
+            // call the dnd5e.preLongRest hook, like the original function does
+            if ( Hooks.call("dnd5e.preLongRest", this, config) === false ) return;
 
             const hd0 = this.system.attributes.hd;
             const hp0 = this.system.attributes.hp.value;
@@ -171,9 +176,9 @@ function patch_newLongRest() {
             }
 
             // Maybe present a confirmation dialog
-            if (dialog) {
+            if (config.dialog) {
                 try {
-                    newDay = await HDLongRestDialog.hdLongRestDialog({ actor: this });
+                    config.newDay = await HDLongRestDialog.hdLongRestDialog({ actor: this });
                 } catch (err) {
                     return;
                 }
@@ -187,7 +192,7 @@ function patch_newLongRest() {
 
             const dhd = this.system.attributes.hd - hd0;
             const dhp = this.system.attributes.hp.value - hp0;
-            return this._rest(chat, newDay, true, dhd, dhp);
+            return this._rest(config.chat, config.newDay, true, dhd, dhp);
         },
         "OVERRIDE",
     );

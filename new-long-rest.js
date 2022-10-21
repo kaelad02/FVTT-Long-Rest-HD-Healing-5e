@@ -1,6 +1,4 @@
-import ShortRestDialog from "../../systems/dnd5e/module/apps/short-rest.js";
-
-export default class HDLongRestDialog extends ShortRestDialog {
+export default class HDLongRestDialog extends dnd5e.applications.actor.ShortRestDialog {
     static get defaultOptions() {
         return mergeObject(super.defaultOptions, {
             template: "modules/long-rest-hd-healing/templates/hd-long-rest.html",

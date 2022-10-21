@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [3.2.1] 2022-10-21
+
+### CHANGED
+
+- Update for Foundry v10 (thanks to Chris Seieroe and @TenguGrib)!
+
 ## [3.2.1] 2022-01-04
 
 ### FIXED

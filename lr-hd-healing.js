@@ -308,7 +308,7 @@ function patch_getRestItemUsesRecovery() {
     libWrapper.register(
         "long-rest-hd-healing",
         "CONFIG.Actor.documentClass.prototype._getRestItemUsesRecovery",
-        function patched_getRestItemUsesRecovery(wrapped, ...args) {
+        async function patched_getRestItemUsesRecovery(wrapped, ...args) {
             const { recoverShortRestUses=true, recoverLongRestUses=true, recoverDailyUses=true } = args[0] ?? {};
 
             const featsUsesRecoveryMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult-uses-feats");
@@ -318,7 +318,7 @@ function patch_getRestItemUsesRecovery() {
             const dayRecoveryMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult-day");
             const dayRecoveryMultiplier = determineLongRestMultiplier(dayRecoveryMultSetting);
 
-            const results = wrapped({ recoverShortRestUses, recoverLongRestUses: false, recoverDailyUses: false });
+            const results = await wrapped({ recoverShortRestUses, recoverLongRestUses: false, recoverDailyUses: false });
 
             for ( let item of this.items ) {
                 _recoverItemUses(

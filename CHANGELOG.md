@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [3.3.1] 2023-02-23
+
+### CHANGED
+
+- Fix async/await issue causing [a-ws-m/FVTT-Long-Rest-HD-Healing-5e#7](https://github.com/a-ws-m/FVTT-Long-Rest-HD-Healing-5e/issues/7) (thanks Chris Seieroe).
+
 ## [3.2.1] 2022-10-21
 
 ### CHANGED

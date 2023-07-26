@@ -25,7 +25,7 @@ export default class HDLongRestDialog extends dnd5e.applications.actor.ShortRest
                 buttons: {
                     rest: {
                         icon: "<i class=\"fas fa-bed\"></i>",
-                        label: "Rest",
+                        label: game.i18n.localize("DND5E.Rest"),
                         callback: html => {
                             let newDay = true;
                             if (game.settings.get("dnd5e", "restVariant") !== "gritty") {

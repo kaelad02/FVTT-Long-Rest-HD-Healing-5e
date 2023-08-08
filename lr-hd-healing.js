@@ -166,13 +166,20 @@ function patch_newLongRest() {
             }
 
             // ... and recover hit dice (if applicable)
-            if (recoverHDBeforeRoll()) {
+            const recoverHDBeforeRoll = game.settings.get("long-rest-hd-healing", "recover-hd-before-rest");
+            if (recoverHDBeforeRoll) {
                 // This comes from the code for Actor5e._rest()
                 let hitDiceUpdates = [];
                 let hitDiceRecovered;
                 // We call this with CALC_HD_RECOVERY to let the patched method know we're calling it.
                 ({updates: hitDiceUpdates, hitDiceRecovered} = this._getRestHitDiceRecovery(CALC_HD_RECOVERY));
                 await this.updateEmbeddedDocuments("Item", hitDiceUpdates);
+            }
+
+            const recoveryHDMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult");
+            if (recoveryHDMultSetting === "full") {
+                // We'll autoroll all the hit dice, or till we get to max HP
+                this.autoSpendHitDice({threshold: 1});
             }
 
             // Maybe present a confirmation dialog
@@ -184,12 +191,6 @@ function patch_newLongRest() {
                 }
             }
             
-            const recoveryHDMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult");
-            if (recoveryHDMultSetting === "full") {
-                // We'll autoroll all the hit dice, or till we get to max HP
-                this.autoSpendHitDice({threshold: 0});
-            }
-
             const dhd = this.system.attributes.hd - hd0;
             const dhp = this.system.attributes.hp.value - hp0;
             return this._rest(config.chat, config.newDay, true, dhd, dhp);
@@ -222,9 +223,11 @@ function patch_getRestHitDiceRecovery() {
         function patched_getRestHitDiceRecovery(wrapped, ...args) {
             let maxHitDice = args[0];
             const emptyReturn = { updates: [], hitDiceRecovered: 0 };
-            // If recoverHDBeforeRoll(), we want to make sure _rest doesn't recover hit dice.
+
+            const recoverHDBeforeRoll = game.settings.get("long-rest-hd-healing", "recover-hd-before-rest");
+            // If recoverHDBeforeRoll, we want to make sure _rest doesn't recover hit dice.
             // We only return a non-zero hitDiceToRecover when this module calls the method, with maxHitDice = CALC_HD_RECOVERY.
-            if (recoverHDBeforeRoll()) {
+            if (recoverHDBeforeRoll) {
                 if (maxHitDice !== CALC_HD_RECOVERY) return emptyReturn;
                 maxHitDice = undefined;
             }
@@ -383,10 +386,4 @@ function determineLongRestMultiplier(multSetting) {
     }
 
     return recoveryMultiplier;
-}
-
-// Determine whether to recover hit dice before rolling
-function recoverHDBeforeRoll(){
-    const recoveryHDMultSetting = game.settings.get("long-rest-hd-healing", "recovery-mult");
-    return game.settings.get("long-rest-hd-healing", "recover-hd-before-rest") || recoveryHDMultSetting === "full";
 }
